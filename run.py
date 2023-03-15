@@ -5,9 +5,15 @@ import smtplib
 import json
 import os
 
+import utils.rpi
+import utils.f0
+import utils.lab401
+import utils.joom
 email = ""
 password = ""
 targets = []
+savefile = ".prev_update.json"
+f0_vendors = {}
 
 if not os.path.exists(".creds.txt"):
     print("Credential file not found, exiting")
@@ -28,47 +34,33 @@ with open("config.json","r") as file:
     for target in json_data["subscribers"]:
         targets.append(target)
 
+    for vendor in json_data["flipper_url"]:
+        f0_vendors[vendor] = json_data["flipper_url"][vendor]
+
 creds = (email,password)
 
-prev_id = ""
-with open("prev_id.txt",'r') as file:
-    prev_id = file.read()
+ids = {
+    "id_rpi":"",
+    "f0_instock":"no",
+    "401_instock":"no",
+    "joom_instock":"no"
+}
 
-print("last saved ID :",prev_id)
+if not os.path.exists(savefile):
+    file = open(savefile,'x')
+    file.close()
 
-def create_link(link):
-    i1 = link.index("vendor=")
-    i2 = link.index("&")
-    vendor = link[i1:i2]
+with open(savefile,'r') as file:
+    json_data = json.load(file)
+    for entry in json_data:
+        ids[entry] = json_data[entry]
 
-    result =  "https://rpilocator.com/?instock&" + vendor
-    return result
 
-def create_message(target,product):
+print("last saved ID :",ids["id_rpi"])
 
-    link = create_link(product["link"])
-
-    message = """From: RPI Locator trought melchior <python.testhere@gmail.com>
-To: To {} <{}>
-Subject: {}
-
-Hello {},
-
-{}
-
-Here is a link to all the raspberry pi currently available in this store:
-
-{}
-
-Here is a link to all the raspberry pi currently available everywhere :
-
-https://rpilocator.com/?instock
-
-Have a nice day !
-
-Powered by https://rpilocator.com/
-""".format(target["name"],target["email"],product["title"],target["name"],product["summary"],link)
-    return message
+def save_ids():
+    with open(savefile,"w") as file:
+        json.dump(ids,file)
 
 def send_mail(message):
     s = smtplib.SMTP('smtp.gmail.com', 587)
@@ -77,23 +69,64 @@ def send_mail(message):
     s.sendmail(creds[0], target["email"], message)
     s.quit()
 
+def check_rpi():
+    NewsFeed = feedparser.parse("https://rpilocator.com/feed/")
+    entries = NewsFeed["entries"]
+    try:
+        ID = entries[0]["id"]
+        if ID != ids["id_rpi"]:
+            prev_id = ID
+            save_ids()
+            print(datetime.now(),ID,entries[0]["title"])
+            for target in targets:
+                message = rpi.create_message(target,entries[0])
+                send_mail(message)
+        else:
+            time.sleep(9)
+    except IndexError:
+        pass
+
+def check_f0():
+    page = f0.get_page(f0_vendors["f0"])
+    instock = f0.check_in_stock(page)
+    if instock:
+        if ids["f0_instock"] == "no":
+            ids["f0_instock"] = "yes"
+            save_ids()
+    else:
+        if ids["f0_instock"] == "yes":
+            ids["f0_instock"] = "no"
+            save_ids()
+
+def check_joom():
+    page = joom.get_page(f0_vendors["joom"])
+    instock = joom.check_in_stock(page)
+    if instock:
+        if ids["joom_instock"] == "no":
+            ids["joom_instock"] = "yes"
+            save_ids()
+    else:
+        if ids["joom_instock"] == "yes":
+            ids["joom_instock"] = "no"
+            save_ids()
+
+
+def check_401():
+    page = lab401.get_page(f0_vendors["lab401"])
+    instock = lab401.check_in_stock(page)
+    if instock:
+        if ids["lab401_instock"] == "no":
+            ids["lab401_instock"] = "yes"
+            save_ids()
+    else:
+        if ids["lab401_instock"] == "yes":
+            ids["lab401_instock"] = "no"
+            save_ids()
+
+
+
 while True:
     try:
-        NewsFeed = feedparser.parse("https://rpilocator.com/feed/")
-        entries = NewsFeed["entries"]
-        try:
-            ID = entries[0]["id"]
-            if ID != prev_id:
-                prev_id = ID
-                with open("prev_id.txt","w") as file:
-                    file.write(ID)
-                print(datetime.now(),ID,entries[0]["title"])
-                for target in targets:
-                    message = create_message(target,entries[0])
-                    send_mail(message)
-            else:
-                time.sleep(9)
-        except IndexError:
-            pass
+        check_rpi()
     except ConnectionResetError:
         pass
