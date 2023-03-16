@@ -1,0 +1,18 @@
+{
+  "flipper_url" : {
+    "f0": "https://shop.flipperzero.one/",
+    "lab401": "https://lab401.com/products/flipper-zero",
+    "joom": "https://www.joom.com/fr/products/62f661838ed09b01ebd4e0e2"
+  },
+
+  "subscribers" : [
+    {                                                                                                                                                                                                    
+      "name": "Person1",                                                                                                                                                                                        
+      "email": "myemail@gmail.com"
+    },                                                                                                                                                                                                              
+    {                                                                                                                                                                                                               
+      "name": "Person2",                                                                                                                                                                                          
+      "email": "anotheremail@nowhere.com"
+    }
+  ]
+}
