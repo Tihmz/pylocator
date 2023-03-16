@@ -49,11 +49,11 @@ ids = {
 if not os.path.exists(savefile):
     file = open(savefile,'x')
     file.close()
-
-with open(savefile,'r') as file:
-    json_data = json.load(file)
-    for entry in json_data:
-        ids[entry] = json_data[entry]
+else:
+    with open(savefile,'r') as file:
+        json_data = json.load(file)
+        for entry in json_data:
+            ids[entry] = json_data[entry]
 
 
 print("last saved ID :",ids["id_rpi"])
