@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import re
 
 def get_page(url):
     options = webdriver.ChromeOptions()
@@ -20,5 +21,27 @@ def check_in_stock(html_content):
         return False
     else:
         return True
+
+def create_message(target,link):
+
+    regex = re.compile(r"https?://(?:[^./]+\.)?([^./]+)\.[^.]+\.?.*")
+    match = regex.match(link)
+    vendor = match.group(1)
+
+    message = """From: PY Locator <python.testhere@gmail.com>
+To: To {} <{}>
+Subject: Flipper zero in stock at {}
+
+Hello {},
+
+There are some Flipper zero in stock at {},
+
+you can check them out here : 
+
+{}
+
+Have a good day !
+""".format(target["name"],target["email"],vendor,target["name"],vendor,link)
+    return message
 
 

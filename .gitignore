@@ -1,3 +1,4 @@
 .creds.txt
+utils/__pycache__
 .prev_update.json
 config.json
